@@ -1,6 +1,7 @@
 "use server";
 
 import { redirect } from "next/navigation";
+import { revalidatePath } from "next/cache";
 import { buatKlienSesi } from "@/lib/supabase/session";
 
 // Ambil sesi admin dari cookie. Dipakai aksi yang mengubah data supaya login
@@ -141,4 +142,83 @@ export async function gantiPassword(_keadaanSebelumnya, formData) {
       sukses: "",
     };
   }
+}
+
+// US-08 (bonus): tambah produk baru dari halaman admin.
+// Semua pemeriksaan dilakukan di server; memakai koneksi sesi admin sehingga
+// aturan Row Level Security (admin_tambah_produk) tetap berlaku.
+export async function simpanProduk(_keadaanSebelumnya, formData) {
+  const nama = String(formData.get("nama") ?? "").trim();
+  const hargaMentah = String(formData.get("harga") ?? "").trim();
+  const kategori = String(formData.get("kategori") ?? "").trim();
+  const fotoUrl = String(formData.get("foto_url") ?? "").trim();
+  const deskripsi = String(formData.get("deskripsi") ?? "").trim();
+
+  if (!nama) {
+    return { error: "Nama produk wajib diisi.", sukses: "" };
+  }
+
+  if (!hargaMentah) {
+    return { error: "Harga wajib diisi.", sukses: "" };
+  }
+
+  const harga = Number(hargaMentah);
+
+  if (!Number.isInteger(harga) || harga < 0) {
+    return {
+      error: "Harga harus berupa angka bulat dan tidak boleh negatif.",
+      sukses: "",
+    };
+  }
+
+  let supabase;
+
+  try {
+    const hasil = await ambilAdmin();
+    supabase = hasil.supabase;
+
+    if (hasil.error || !hasil.user) {
+      console.error("Tambah produk gagal: sesi admin tidak ditemukan.", hasil.error);
+      return {
+        error: "Sesi admin tidak ditemukan. Silakan masuk lagi.",
+        sukses: "",
+      };
+    }
+  } catch (error) {
+    console.error("Tambah produk gagal saat memeriksa sesi:", error);
+    return {
+      error: "Sesi admin tidak ditemukan. Silakan masuk lagi.",
+      sukses: "",
+    };
+  }
+
+  try {
+    const { error } = await supabase.from("produk").insert({
+      nama,
+      harga,
+      kategori: kategori || null,
+      foto_url: fotoUrl || null,
+      deskripsi: deskripsi || null,
+    });
+
+    if (error) {
+      console.error("Tambah produk gagal:", error.code, error.message);
+      return {
+        error: "Produk gagal disimpan. Coba lagi beberapa saat lagi.",
+        sukses: "",
+      };
+    }
+  } catch (error) {
+    console.error("Tambah produk gagal:", error);
+    return {
+      error: "Produk gagal disimpan. Coba lagi beberapa saat lagi.",
+      sukses: "",
+    };
+  }
+
+  // Katalog publik dan daftar admin harus langsung menampilkan produk baru.
+  revalidatePath("/");
+  revalidatePath("/admin");
+
+  redirect("/admin");
 }
