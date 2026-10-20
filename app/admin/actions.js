@@ -3,6 +3,18 @@
 import { redirect } from "next/navigation";
 import { buatKlienSesi } from "@/lib/supabase/session";
 
+// Ambil sesi admin dari cookie. Dipakai aksi yang mengubah data supaya login
+// selalu diperiksa di server (lihat AGENTS.md, aturan keamanan 3).
+async function ambilAdmin() {
+  const supabase = await buatKlienSesi();
+  const {
+    data: { user },
+    error,
+  } = await supabase.auth.getUser();
+
+  return { supabase, user, error };
+}
+
 export async function masukAdmin(_keadaanSebelumnya, formData) {
   const email = String(formData.get("email") ?? "").trim();
   const password = String(formData.get("password") ?? "");
@@ -50,6 +62,7 @@ export async function keluarAdmin() {
   redirect("/admin/login");
 }
 
+// Aksi yang mengubah data: periksa sesi admin di server sebelum menulis.
 export async function gantiPassword(_keadaanSebelumnya, formData) {
   const passwordBaru = String(formData.get("password_baru") ?? "");
   const konfirmasi = String(formData.get("konfirmasi_password") ?? "");
@@ -66,12 +79,7 @@ export async function gantiPassword(_keadaanSebelumnya, formData) {
   }
 
   try {
-    const supabase = await buatKlienSesi();
-
-    const {
-      data: { user },
-      error: errorSesi,
-    } = await supabase.auth.getUser();
+    const { supabase, user, error: errorSesi } = await ambilAdmin();
 
     if (errorSesi || !user) {
       console.error("Ganti password gagal: sesi admin tidak ditemukan.", errorSesi);
