@@ -222,3 +222,103 @@ export async function simpanProduk(_keadaanSebelumnya, formData) {
 
   redirect("/admin");
 }
+
+// US-09 (bonus): ubah data produk dari halaman admin.
+// Periksa login di server, lalu perbarui lewat koneksi sesi admin sehingga
+// aturan Row Level Security (admin_ubah_produk) tetap berlaku.
+export async function ubahProduk(_keadaanSebelumnya, formData) {
+  const idMentah = String(formData.get("id") ?? "").trim();
+  const nama = String(formData.get("nama") ?? "").trim();
+  const hargaMentah = String(formData.get("harga") ?? "").trim();
+  const kategori = String(formData.get("kategori") ?? "").trim();
+  const fotoUrl = String(formData.get("foto_url") ?? "").trim();
+  const deskripsi = String(formData.get("deskripsi") ?? "").trim();
+
+  if (!/^\d+$/.test(idMentah)) {
+    return {
+      error: "Produk tidak ditemukan. Pilih produk dari daftar lalu coba lagi.",
+      sukses: "",
+    };
+  }
+
+  if (!nama) {
+    return { error: "Nama produk wajib diisi.", sukses: "" };
+  }
+
+  if (!hargaMentah) {
+    return { error: "Harga wajib diisi.", sukses: "" };
+  }
+
+  const harga = Number(hargaMentah);
+
+  if (!Number.isInteger(harga) || harga < 0) {
+    return {
+      error: "Harga harus berupa angka bulat dan tidak boleh negatif.",
+      sukses: "",
+    };
+  }
+
+  let supabase;
+
+  try {
+    const hasil = await ambilAdmin();
+    supabase = hasil.supabase;
+
+    if (hasil.error || !hasil.user) {
+      console.error("Ubah produk gagal: sesi admin tidak ditemukan.", hasil.error);
+      return {
+        error: "Sesi admin tidak ditemukan. Silakan masuk lagi.",
+        sukses: "",
+      };
+    }
+  } catch (error) {
+    console.error("Ubah produk gagal saat memeriksa sesi:", error);
+    return {
+      error: "Sesi admin tidak ditemukan. Silakan masuk lagi.",
+      sukses: "",
+    };
+  }
+
+  try {
+    const { data, error } = await supabase
+      .from("produk")
+      .update({
+        nama,
+        harga,
+        kategori: kategori || null,
+        foto_url: fotoUrl || null,
+        deskripsi: deskripsi || null,
+      })
+      .eq("id", Number(idMentah))
+      .select("id");
+
+    if (error) {
+      console.error("Ubah produk gagal:", error.code, error.message);
+      return {
+        error: "Perubahan gagal disimpan. Coba lagi beberapa saat lagi.",
+        sukses: "",
+      };
+    }
+
+    if (!data || data.length === 0) {
+      return {
+        error: "Produk tidak ditemukan. Produk mungkin sudah dihapus.",
+        sukses: "",
+      };
+    }
+  } catch (error) {
+    console.error("Ubah produk gagal:", error);
+    return {
+      error: "Perubahan gagal disimpan. Coba lagi beberapa saat lagi.",
+      sukses: "",
+    };
+  }
+
+  // Katalog publik, daftar admin, dan halaman detail harus langsung
+  // menampilkan perubahan terbaru.
+  revalidatePath("/");
+  revalidatePath("/admin");
+  revalidatePath(`/produk/${idMentah}`);
+
+  redirect("/admin");
+}

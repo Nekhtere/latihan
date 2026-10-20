@@ -13,6 +13,8 @@ export default function FormProduk({
 }) {
   return (
     <form action={action} className="flex max-w-xl flex-col gap-4">
+      {/* US-09: id produk ikut dikirim supaya aksi tahu baris mana yang diubah. */}
+      {produk.id ? <input type="hidden" name="id" defaultValue={produk.id} /> : null}
       <Input label="Nama produk" name="nama" defaultValue={produk.nama} required />
       <Input
         label="Harga (Rp)"
