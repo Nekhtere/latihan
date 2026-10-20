@@ -20,11 +20,26 @@ export default function TabelProduk({ daftarProduk }) {
             <tr key={produk.id} className="border-t border-garis">
               <td className="px-4 py-3">
                 <div className="flex items-center gap-3">
-                  <img src={produk.foto_url} alt="" className="h-10 w-10 rounded-md object-cover" />
+                  {produk.foto_url ? (
+                    <img
+                      src={produk.foto_url}
+                      alt=""
+                      className="h-10 w-10 rounded-md object-cover"
+                    />
+                  ) : (
+                    <span
+                      aria-hidden="true"
+                      className="flex h-10 w-10 items-center justify-center rounded-md bg-permukaan text-xs text-teks-lembut"
+                    >
+                      Tanpa foto
+                    </span>
+                  )}
                   <span className="font-semibold">{produk.nama}</span>
                 </div>
               </td>
-              <td className="px-4 py-3 text-teks-lembut">{produk.kategori}</td>
+              <td className="px-4 py-3 text-teks-lembut">
+                {produk.kategori || "Tanpa kategori"}
+              </td>
               <td className="px-4 py-3">{formatRupiah(produk.harga)}</td>
               <td className="px-4 py-3">
                 <div className="flex justify-end gap-2">

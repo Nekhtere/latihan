@@ -18,6 +18,9 @@ Uji di link Vercel, bukan hanya di laptop. Coba juga di HP.
 - [ ] Ganti password berhasil, lalu login dengan password baru berhasil.
 - [ ] Password baru kurang dari 8 karakter atau tidak sama dengan konfirmasi ditolak dengan pesan yang jelas.
 - [ ] Tombol "Keluar" mengakhiri sesi.
+- [ ] Daftar produk di `/admin` menampilkan produk yang sama dengan katalog (bukan data contoh).
+- [ ] Jumlah produk di `/admin` sama dengan jumlah kartu di katalog.
+- [ ] Produk yang baru ditambah di Supabase > Table Editor langsung muncul di `/admin` setelah muat ulang.
 
 ## Bonus (jika dikerjakan)
 
